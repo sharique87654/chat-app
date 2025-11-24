@@ -1,13 +1,12 @@
-const express = require('express');
-const http = require('http');
-const cors = require('cors');
-const { Server } = require('socket.io');
+const express = require ("express");
+const cors = require ("cors")
+const http = require ("http");
+const {Server} = require ("socket.io")
 
 const app = express();
 const server = http.createServer(app);
-
-app.use(cors());
-app.use(express.json());
+app.use(express.json);
+app.use(cors);
 
 const io = new Server(server, {
   cors: {
@@ -16,20 +15,23 @@ const io = new Server(server, {
   },
 });
 
-io.on('connection', (socket) => {
-  console.log('user connected:', socket.id);
 
-  socket.on('chat_message', (msg) => {
-    console.log('message from client:', msg);
-    io.emit('chat_message', msg);
-  });
+io.on("connection", (socket) => {
+  console.log("new user has connected :", socket.id);
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected:', socket.id);
-  });
+  socket.on("chatmessage" , (msg) => {
+    console.log("message from client :", msg )
+    io.emit("message", msg );
+
+    socket.on("disconnected", () => {
+      console.log("user disconnected :",socket.id)
+    })
+
+  })
 });
 
-const PORT = 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+server.listen(3000, () =>{
+  console.log("server started at 3000 port");
+  
+})

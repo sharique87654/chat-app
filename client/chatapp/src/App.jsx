@@ -1,79 +1,90 @@
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 
-const socket = io('http://localhost:5000', {
-  autoConnect: true,
-});
+const socket = io("http://localhost:3000");
 
-function App() {
-  const [isConnected, setIsConnected] = useState(socket.connected);
-  const [message, setMessage] = useState('');
+export default function App() {
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
+
   useEffect(() => {
-    function onConnect() {
-      console.log('connected:', socket.id);
-      setIsConnected(true);
-    }
-
-    function onDisconnect() {
-      console.log('disconnected');
-      setIsConnected(false);
-    }
-
-    function onChatMessage(msg) {
-      console.log('received:', msg);
-      setMessages((prev) => [...prev, msg]);
-    }
-
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    socket.on('chat_message', onChatMessage);
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-      socket.off('chat_message', onChatMessage);
-    };
+    const saved = JSON.parse(localStorage.getItem("chatMessages")) || [];
+    setMessages(saved);
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // Listen to messages from server
+  useEffect(() => {
+    socket.on("message", (msg) => {
+      const updated = [...messages, msg];
+
+      setMessages(updated);
+      localStorage.setItem("chatMessages", JSON.stringify(updated));
+    });
+
+    return () => socket.off("message");
+  }, [messages]);
+
+  // Send message to backend
+  const sendMessage = () => {
     if (!message.trim()) return;
-    socket.emit('chat_message', message);
-    setMessage('');
+
+    socket.emit("chatmessage", message);
+    setMessage("");
   };
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Chat App</h2>
-      <p>Connection: {isConnected ? 'online' : 'offline'}</p>
 
-      <div
-        style={{
-          border: '1px solid #ccc',
-          height: 300,
-          overflowY: 'auto',
-          marginBottom: 10,
-          padding: 10,
-        }}
-      >
+
+
+
+
+  return (
+    <div style={styles.container}>
+      <h2>Chat App</h2>
+
+      <div style={styles.chatBox}>
         {messages.map((m, i) => (
-          <div key={i}>{m}</div>
+          <p key={i} style={styles.msg}>{m}</p>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <div style={styles.row}>
         <input
-          style={{ width: '80%' }}
+          style={styles.input}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type message..."
         />
-        <button type="submit">Send</button>
-      </form>
+        <button style={styles.btn} onClick={sendMessage}>Send</button>
+      </div>
     </div>
   );
 }
 
-export default App;
+const styles = {
+  container: { width: "400px", margin: "40px auto", fontFamily: "Arial" },
+  chatBox: {
+    border: "1px solid #ccc",
+    height: "300px",
+    overflowY: "auto",
+    padding: "10px",
+    background: "#fafafa"
+  },
+  msg: {
+    background: "#fff",
+    padding: "8px",
+    margin: "5px 0",
+    borderRadius: "5px",
+    border: "1px solid #ddd"
+  },
+  row: { display: "flex", marginTop: "10px", gap: "10px" },
+  input: { flex: 1, padding: "10px", border: "1px solid #aaa", borderRadius: "4px" },
+  btn: {
+    padding: "10px 15px",
+    background: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer"
+  }
+};
